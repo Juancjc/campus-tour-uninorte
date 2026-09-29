@@ -73,7 +73,7 @@ ADMIN_PASSWORD=escolha-uma-senha-segura
 Depois, suba o ambiente:
 
 ```bash
-docker compose up --build -d
+docker compose --profile local up --build -d
 ```
 
 A aplicação estará disponível em **http://localhost:8080**. As migrações, dados iniciais e usuário administrador são preparados automaticamente na primeira inicialização.
@@ -81,11 +81,11 @@ A aplicação estará disponível em **http://localhost:8080**. As migrações, 
 Para acompanhar os serviços ou desligá-los:
 
 ```bash
-docker compose logs -f app
-docker compose down
+docker compose --profile local logs -f app
+docker compose --profile local down
 ```
 
-Os dados do PostgreSQL ficam preservados em um volume do Docker. Use `docker compose down -v` somente quando quiser apagar os dados locais e recomeçar do zero.
+Os dados do PostgreSQL ficam preservados em um volume do Docker. Use `docker compose --profile local down -v` somente quando quiser apagar os dados locais e recomeçar do zero. Em produção, o perfil `local` não deve ser habilitado: a aplicação usará o servidor definido em `DB_HOST`.
 
 ## Desenvolvimento sem Docker
 
