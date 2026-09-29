@@ -60,7 +60,7 @@ const addCommand = (command) => {
 
 const step = (command) => {
     const movement = movements[command];
-    if (!movement) return;
+    if (!movement) return true;
 
     robot.value.direction = movement.direction;
     const next = {
@@ -76,7 +76,11 @@ const step = (command) => {
         next.x < props.config.board_size &&
         next.y >= 0 &&
         next.y < props.config.board_size;
-    if (inside && !blocked) robot.value = next;
+    if (inside && !blocked) {
+        robot.value = next;
+        return true;
+    }
+    return false;
 };
 
 const execute = async () => {
@@ -86,9 +90,19 @@ const execute = async () => {
     robot.value = { ...props.config.start, direction: props.config.direction };
     try {
         await startSession();
-        for (const command of commands.value) {
-            step(command);
+        let blockedAt = null;
+        for (const [index, command] of commands.value.entries()) {
+            const moved = step(command);
+            if (!moved && blockedAt === null) blockedAt = index + 1;
             await new Promise((resolve) => window.setTimeout(resolve, 330));
+        }
+        if (blockedAt !== null) {
+            toast.add({
+                severity: 'info',
+                summary: 'Caminho bloqueado',
+                detail: `O robô esbarrou em um obstáculo no comando ${blockedAt} e não conseguiu avançar.`,
+                life: 4000,
+            });
         }
         const duration = Math.max(1000, Date.now() - startedAt.value);
         const { data } = await axios.post(
