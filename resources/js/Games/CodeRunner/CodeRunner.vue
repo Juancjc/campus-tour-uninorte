@@ -17,11 +17,17 @@ const executing = ref(false);
 const result = ref(null);
 const startedAt = ref(null);
 const commandOptions = [
-    { value: 'forward', label: 'Frente', icon: 'pi pi-arrow-up' },
+    { value: 'up', label: 'Cima', icon: 'pi pi-arrow-up' },
+    { value: 'down', label: 'Baixo', icon: 'pi pi-arrow-down' },
     { value: 'left', label: 'Esquerda', icon: 'pi pi-arrow-left' },
     { value: 'right', label: 'Direita', icon: 'pi pi-arrow-right' },
-    { value: 'repeat', label: 'Repetir', icon: 'pi pi-replay' },
 ];
+const movements = {
+    up: { x: 0, y: -1, direction: 'north' },
+    down: { x: 0, y: 1, direction: 'south' },
+    left: { x: -1, y: 0, direction: 'west' },
+    right: { x: 1, y: 0, direction: 'east' },
+};
 const directionIcon = computed(
     () =>
         ({ north: '↑', east: '→', south: '↓', west: '←' })[
@@ -52,31 +58,16 @@ const addCommand = (command) => {
         commands.value.push(command);
 };
 
-const expandedCommands = () => {
-    const expanded = [];
-    commands.value.forEach((command) => {
-        if (command === 'repeat' && expanded.length)
-            expanded.push(expanded.at(-1));
-        else if (command !== 'repeat') expanded.push(command);
-    });
-    return expanded;
-};
-
 const step = (command) => {
-    const directions = ['north', 'east', 'south', 'west'];
-    if (command === 'left' || command === 'right') {
-        const offset = command === 'right' ? 1 : 3;
-        robot.value.direction =
-            directions[
-                (directions.indexOf(robot.value.direction) + offset) % 4
-            ];
-        return;
-    }
-    const next = { ...robot.value };
-    if (next.direction === 'north') next.y -= 1;
-    if (next.direction === 'east') next.x += 1;
-    if (next.direction === 'south') next.y += 1;
-    if (next.direction === 'west') next.x -= 1;
+    const movement = movements[command];
+    if (!movement) return;
+
+    robot.value.direction = movement.direction;
+    const next = {
+        ...robot.value,
+        x: robot.value.x + movement.x,
+        y: robot.value.y + movement.y,
+    };
     const blocked = props.config.obstacles.some(
         ([x, y]) => x === next.x && y === next.y,
     );
@@ -95,7 +86,7 @@ const execute = async () => {
     robot.value = { ...props.config.start, direction: props.config.direction };
     try {
         await startSession();
-        for (const command of expandedCommands()) {
+        for (const command of commands.value) {
             step(command);
             await new Promise((resolve) => window.setTimeout(resolve, 330));
         }
@@ -277,8 +268,8 @@ const reset = () => {
                 <strong class="text-campus-cyan"
                     >O que você está aprendendo:</strong
                 >
-                algoritmo é uma sequência ordenada de instruções. Repetições
-                ajudam a reduzir trabalho e organizar a lógica.
+                algoritmo é uma sequência ordenada de instruções. Cada comando
+                move o robô uma casa na direção indicada.
             </div>
         </section>
     </div>

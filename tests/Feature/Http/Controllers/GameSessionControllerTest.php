@@ -39,7 +39,7 @@ class GameSessionControllerTest extends TestCase
         $response = $this->actingAs($user)->postJson(route('game-sessions.complete', [$game, $session]), [
             'score' => 999999,
             'duration_ms' => 5000,
-            'payload' => ['commands' => ['forward', 'forward', 'forward', 'forward', 'left', 'forward', 'forward', 'forward', 'forward']],
+            'payload' => ['commands' => ['up', 'up', 'up', 'up', 'right', 'right', 'right', 'right']],
         ]);
 
         $response->assertOk()
@@ -49,6 +49,22 @@ class GameSessionControllerTest extends TestCase
         $this->assertDatabaseHas('game_scores', ['user_id' => $user->id, 'game_id' => $game->id, 'best_score' => 990, 'completed_count' => 1]);
         $this->assertDatabaseHas('users', ['id' => $user->id, 'points' => 990]);
         $this->assertDatabaseHas('game_events', ['game_session_id' => $session->id, 'event_type' => 'game_completed']);
+    }
+
+    public function test_returns_422_for_legacy_relative_code_runner_commands(): void
+    {
+        $user = User::factory()->create();
+        $game = Game::factory()->create(['slug' => 'code-runner']);
+        $session = GameSession::factory()->for($user)->for($game)->create();
+
+        $response = $this->actingAs($user)->postJson(route('game-sessions.complete', [$game, $session]), [
+            'duration_ms' => 5000,
+            'payload' => ['commands' => ['forward', 'repeat']],
+        ]);
+
+        $response->assertUnprocessable()
+            ->assertJsonValidationErrors(['payload.commands.0', 'payload.commands.1']);
+        $this->assertDatabaseHas('game_sessions', ['id' => $session->id, 'status' => 'started', 'score' => 0]);
     }
 
     public function test_guardian_digital_accepts_all_situations_and_saves_points(): void
@@ -181,7 +197,7 @@ class GameSessionControllerTest extends TestCase
 
         $this->postJson(route('game-sessions.complete', [$game, $firstSessionId]), [
             'duration_ms' => 5000,
-            'payload' => ['commands' => ['forward']],
+            'payload' => ['commands' => ['up']],
         ])->assertOk()
             ->assertJsonPath('completed', false)
             ->assertJsonPath('score', 0);
@@ -210,7 +226,7 @@ class GameSessionControllerTest extends TestCase
 
         $response = $this->actingAs($user)->postJson(route('game-sessions.complete', [$codeRunner, $session]), [
             'duration_ms' => 5000,
-            'payload' => ['commands' => ['forward', 'forward', 'forward', 'forward', 'left', 'forward', 'forward', 'forward', 'forward']],
+            'payload' => ['commands' => ['up', 'up', 'up', 'up', 'right', 'right', 'right', 'right']],
         ]);
 
         $response->assertOk()
@@ -232,7 +248,7 @@ class GameSessionControllerTest extends TestCase
 
         $response = $this->actingAs($intruder)->postJson(route('game-sessions.complete', [$game, $session]), [
             'duration_ms' => 5000,
-            'payload' => ['commands' => ['forward']],
+            'payload' => ['commands' => ['up']],
         ]);
 
         $response->assertForbidden();

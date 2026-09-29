@@ -26,7 +26,7 @@ class CompleteGameSessionRequest extends FormRequest
             'duration_ms' => ['required', 'integer', 'min:1000', 'max:3600000'],
             'payload' => ['present', 'array'],
             'payload.commands' => ['sometimes', 'array', 'max:30'],
-            'payload.commands.*' => ['string', 'in:forward,left,right,repeat'],
+            'payload.commands.*' => ['string', 'in:up,down,left,right'],
         ];
     }
 }

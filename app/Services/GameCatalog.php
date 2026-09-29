@@ -53,32 +53,27 @@ class GameCatalog
         $position = $config['start'];
         $direction = $config['direction'];
         $obstacles = collect($config['obstacles'])->map(fn (array $point): string => implode(':', $point))->all();
-        $expanded = [];
+        $movements = [
+            'up' => ['x' => 0, 'y' => -1, 'direction' => 'north'],
+            'down' => ['x' => 0, 'y' => 1, 'direction' => 'south'],
+            'left' => ['x' => -1, 'y' => 0, 'direction' => 'west'],
+            'right' => ['x' => 1, 'y' => 0, 'direction' => 'east'],
+        ];
+        $validCommands = [];
 
         foreach (array_slice($commands, 0, 30) as $command) {
-            if ($command === 'repeat' && $expanded !== []) {
-                $expanded[] = end($expanded);
-            } elseif (in_array($command, ['forward', 'left', 'right'], true)) {
-                $expanded[] = $command;
+            if (is_string($command) && isset($movements[$command])) {
+                $validCommands[] = $command;
             }
         }
 
-        foreach ($expanded as $command) {
-            if ($command === 'left' || $command === 'right') {
-                $directions = ['north', 'east', 'south', 'west'];
-                $current = array_search($direction, $directions, true);
-                $offset = $command === 'right' ? 1 : 3;
-                $direction = $directions[($current + $offset) % 4];
-
-                continue;
-            }
-
-            $next = match ($direction) {
-                'north' => ['x' => $position['x'], 'y' => $position['y'] - 1],
-                'east' => ['x' => $position['x'] + 1, 'y' => $position['y']],
-                'south' => ['x' => $position['x'], 'y' => $position['y'] + 1],
-                default => ['x' => $position['x'] - 1, 'y' => $position['y']],
-            };
+        foreach ($validCommands as $command) {
+            $movement = $movements[$command];
+            $direction = $movement['direction'];
+            $next = [
+                'x' => $position['x'] + $movement['x'],
+                'y' => $position['y'] + $movement['y'],
+            ];
 
             $insideBoard = $next['x'] >= 0 && $next['x'] < $config['board_size'] && $next['y'] >= 0 && $next['y'] < $config['board_size'];
             if ($insideBoard && ! in_array($next['x'].':'.$next['y'], $obstacles, true)) {
@@ -87,7 +82,7 @@ class GameCatalog
         }
 
         $completed = $position === $config['goal'];
-        $commandPenalty = max(0, count($expanded) - $config['minimum_commands']) * 30;
+        $commandPenalty = max(0, count($validCommands) - $config['minimum_commands']) * 30;
         $timePenalty = min(250, (int) floor($durationMs / 1000) * 2);
         $score = $completed ? max(300, 1000 - $commandPenalty - $timePenalty) : 0;
 
@@ -112,9 +107,9 @@ class GameCatalog
                 'board_size' => 5,
                 'start' => ['x' => 0, 'y' => 4],
                 'goal' => ['x' => 4, 'y' => 0],
-                'direction' => 'east',
+                'direction' => 'north',
                 'obstacles' => [[1, 2], [2, 2], [3, 1]],
-                'minimum_commands' => 9,
+                'minimum_commands' => 8,
                 'max_commands' => 20,
             ],
             'guardiao-digital' => ['items' => [
