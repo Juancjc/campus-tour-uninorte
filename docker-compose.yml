@@ -3,7 +3,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: campus-tour-uninorte:local
     restart: unless-stopped
     environment:
       APP_NAME: "${APP_NAME:-Campus Tour UniNorte}"
