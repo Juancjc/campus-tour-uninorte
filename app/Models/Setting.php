@@ -1,0 +1,23 @@
+<?php
+
+namespace App\Models;
+
+use Database\Factories\SettingFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+#[Fillable(['key', 'value', 'group', 'is_public'])]
+class Setting extends Model
+{
+    /** @use HasFactory<SettingFactory> */
+    use HasFactory;
+
+    protected function casts(): array
+    {
+        return [
+            'value' => 'array',
+            'is_public' => 'boolean',
+        ];
+    }
+}

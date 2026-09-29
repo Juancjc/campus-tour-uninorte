@@ -1,0 +1,83 @@
+@import 'tailwindcss';
+@import 'primeicons/primeicons.css';
+
+@source '../views/**/*.blade.php';
+@source '../js/**/*.vue';
+
+@theme {
+    --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    --color-campus-navy: #031329;
+    --color-campus-deep: #061f43;
+    --color-campus-blue: #087ff5;
+    --color-campus-cyan: #16b9ff;
+    --color-campus-gold: #ffbf00;
+    --color-campus-orange: #f18a00;
+}
+
+:root {
+    color-scheme: dark;
+    font-family: var(--font-sans);
+    background: #020a16;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+    color: #eaf7ff;
+    background:
+        radial-gradient(circle at 15% 10%, rgb(8 127 245 / 18%), transparent 30rem),
+        radial-gradient(circle at 85% 15%, rgb(255 191 0 / 12%), transparent 26rem),
+        #020a16;
+}
+
+button,
+a,
+input,
+select {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.tech-grid {
+    background-image:
+        linear-gradient(rgb(22 185 255 / 5%) 1px, transparent 1px),
+        linear-gradient(90deg, rgb(22 185 255 / 5%) 1px, transparent 1px);
+    background-size: 32px 32px;
+}
+
+.glass-card {
+    border: 1px solid rgb(130 210 255 / 18%);
+    background: linear-gradient(145deg, rgb(8 31 65 / 88%), rgb(3 14 31 / 82%));
+    box-shadow: 0 22px 70px rgb(0 0 0 / 32%);
+    backdrop-filter: blur(16px);
+}
+
+.gold-text {
+    color: transparent;
+    background: linear-gradient(110deg, #fff3a4, #ffbf00 45%, #f18a00);
+    background-clip: text;
+}
+
+.glow-button {
+    box-shadow: 0 0 0 1px rgb(22 185 255 / 25%), 0 0 32px rgb(8 127 245 / 30%);
+}
+
+.focus-ring:focus-visible {
+    outline: 3px solid rgb(255 191 0 / 70%);
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .float-slow {
+        animation: float 5s ease-in-out infinite;
+    }
+
+    @keyframes float {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-10px); }
+    }
+}

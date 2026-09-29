@@ -1,0 +1,54 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: campus-tour-uninorte:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+    ports:
+      - "${APP_PORT:-8080}:80"
+    volumes:
+      - campus_uploads:/var/www/html/storage/app/public
+      - campus_logs:/var/www/html/storage/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1/health"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks:
+      - campus_network
+
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: "${DB_DATABASE:-campus_tour}"
+      POSTGRES_USER: "${DB_USERNAME:-campus_tour}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:?Defina DB_PASSWORD no arquivo .env}"
+    volumes:
+      - campus_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-campus_tour} -d ${DB_DATABASE:-campus_tour}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - campus_network
+
+volumes:
+  campus_postgres:
+  campus_uploads:
+  campus_logs:
+
+networks:
+  campus_network:
+    driver: bridge
