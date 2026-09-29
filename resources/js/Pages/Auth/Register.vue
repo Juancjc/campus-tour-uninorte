@@ -55,13 +55,14 @@ const submit = () => {
         </div>
         <form class="grid gap-4" @submit.prevent="submit">
             <label class="grid gap-1.5"
-                ><span class="text-sm font-semibold">Seu nome</span
+                ><span class="text-sm font-semibold">Nome completo</span
                 ><InputText
                     v-model="form.name"
                     autocomplete="name"
+                    minlength="5"
                     required
                     fluid
-                    placeholder="Como você quer aparecer no ranking?"
+                    placeholder="Digite seu nome e sobrenome"
                 /><small v-if="form.errors.name" class="text-red-300">{{
                     form.errors.name
                 }}</small></label

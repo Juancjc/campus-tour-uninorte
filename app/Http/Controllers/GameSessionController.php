@@ -62,7 +62,7 @@ class GameSessionController extends Controller
         return response()->json($scores->complete(
             $request->user(),
             $gameSession,
-            $data['payload'],
+            $data['payload'] ?? [],
             $data['duration_ms'],
         ));
     }

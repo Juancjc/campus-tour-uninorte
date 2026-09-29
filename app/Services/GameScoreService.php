@@ -11,6 +11,7 @@ use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use InvalidArgumentException;
 
 class GameScoreService
 {
@@ -62,7 +63,11 @@ class GameScoreService
                 throw ValidationException::withMessages(['item_id' => 'Este desafio já foi respondido.']);
             }
 
-            $result = $this->catalog->evaluateAnswer($lockedSession->game->slug, $itemId, $answer);
+            try {
+                $result = $this->catalog->evaluateAnswer($lockedSession->game->slug, $itemId, $answer);
+            } catch (InvalidArgumentException) {
+                throw ValidationException::withMessages(['item_id' => 'Desafio não encontrado.']);
+            }
             $lockedSession->events()->create([
                 'user_id' => $lockedSession->user_id,
                 'game_id' => $lockedSession->game_id,

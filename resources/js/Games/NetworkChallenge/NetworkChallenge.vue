@@ -107,6 +107,7 @@ const animatePacket = () => {
 };
 
 const next = async () => {
+    if (sending.value) return;
     if (currentIndex.value < props.config.total - 1) {
         currentIndex.value += 1;
         feedback.value = null;
@@ -131,6 +132,13 @@ const next = async () => {
             summary: 'Rede conectada!',
             detail: `${data.score} pontos na missão.`,
             life: 5000,
+        });
+    } catch (error) {
+        toast.add({
+            severity: 'error',
+            summary: 'Resultado não salvo',
+            detail: error.response?.data?.message ?? 'Tente novamente.',
+            life: 4500,
         });
     } finally {
         sending.value = false;

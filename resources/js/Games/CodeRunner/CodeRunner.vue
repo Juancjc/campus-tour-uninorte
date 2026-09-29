@@ -108,6 +108,8 @@ const execute = async () => {
             { duration_ms: duration, payload: { commands: commands.value } },
         );
         result.value = data;
+        session.value = null;
+        startedAt.value = null;
         toast.add({
             severity: data.completed ? 'success' : 'warn',
             summary: data.completed ? 'Algoritmo concluído!' : 'Quase lá!',
@@ -129,6 +131,7 @@ const execute = async () => {
 };
 
 const reset = () => {
+    if (executing.value) return;
     commands.value = [];
     robot.value = { ...props.config.start, direction: props.config.direction };
     session.value = null;
@@ -264,6 +267,7 @@ const reset = () => {
                     icon="pi pi-refresh"
                     severity="secondary"
                     outlined
+                    :disabled="executing"
                     @click="reset"
                 />
             </div>
