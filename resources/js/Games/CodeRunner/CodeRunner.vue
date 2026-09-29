@@ -18,8 +18,8 @@ const result = ref(null);
 const startedAt = ref(null);
 const commandOptions = [
     { value: 'forward', label: 'Frente', icon: 'pi pi-arrow-up' },
-    { value: 'left', label: 'Esquerda', icon: 'pi pi-undo' },
-    { value: 'right', label: 'Direita', icon: 'pi pi-redo' },
+    { value: 'left', label: 'Esquerda', icon: 'pi pi-arrow-left' },
+    { value: 'right', label: 'Direita', icon: 'pi pi-arrow-right' },
     { value: 'repeat', label: 'Repetir', icon: 'pi pi-replay' },
 ];
 const directionIcon = computed(
