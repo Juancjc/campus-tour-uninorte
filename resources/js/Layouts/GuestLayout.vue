@@ -1,5 +1,6 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import ProjectCredits from '@/Components/ProjectCredits.vue';
 import { Link } from '@inertiajs/vue3';
 </script>
 
@@ -20,10 +21,13 @@ import { Link } from '@inertiajs/vue3';
                 ><ApplicationLogo
             /></Link>
             <div class="glass-card rounded-3xl p-6 sm:p-8"><slot /></div>
-            <p class="mt-5 text-center text-xs text-slate-400">
-                Seus dados de acesso são usados somente para estatísticas do
-                evento.
-            </p>
+            <footer class="mt-5 text-center text-xs text-slate-400">
+                <p>
+                    Seus dados de acesso são usados somente para estatísticas do
+                    evento.
+                </p>
+                <ProjectCredits />
+            </footer>
         </div>
     </div>
 </template>

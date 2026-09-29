@@ -1,5 +1,6 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import ProjectCredits from '@/Components/ProjectCredits.vue';
 import { Head, Link, usePage } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import QRCode from 'qrcode';
@@ -313,14 +314,17 @@ onMounted(async () => {
         <footer
             class="border-t border-white/8 px-4 py-10 text-center text-sm text-slate-400"
         >
-            <p>
-                Campus Tour UniNorte 2026 • Sistemas de Informação & Análise e
-                Desenvolvimento de Sistemas
-            </p>
-            <p class="mt-2 text-xs">
-                Coletamos somente dados mínimos de acesso para estatísticas do
-                evento. Não solicitamos documentos pessoais.
-            </p>
+            <div class="mx-auto max-w-3xl">
+                <p>
+                    Campus Tour UniNorte 2026 • Sistemas de Informação & Análise
+                    e Desenvolvimento de Sistemas
+                </p>
+                <p class="mt-2 text-xs">
+                    Coletamos somente dados mínimos de acesso para estatísticas
+                    do evento. Não solicitamos documentos pessoais.
+                </p>
+                <ProjectCredits />
+            </div>
         </footer>
     </div>
 </template>

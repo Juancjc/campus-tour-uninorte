@@ -1,5 +1,6 @@
 <script setup>
 import ApplicationLogo from '@/Components/ApplicationLogo.vue';
+import ProjectCredits from '@/Components/ProjectCredits.vue';
 import { Link, usePage } from '@inertiajs/vue3';
 import Toast from 'primevue/toast';
 import { useToast } from 'primevue/usetoast';
@@ -133,7 +134,10 @@ const links = [
         <footer
             class="border-t border-white/8 px-4 py-8 text-center text-xs text-slate-400"
         >
-            {{ $page.props.privacyNotice }}
+            <div class="mx-auto max-w-3xl">
+                <p>{{ $page.props.privacyNotice }}</p>
+                <ProjectCredits />
+            </div>
         </footer>
     </div>
 </template>
