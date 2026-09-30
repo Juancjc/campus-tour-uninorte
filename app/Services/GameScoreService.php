@@ -99,10 +99,11 @@ class GameScoreService
 
             $durationMs = min(max($durationMs, 1000), 3600000);
             if ($lockedSession->game->slug === 'code-runner') {
-                $evaluation = $this->catalog->evaluateCodeRunner($payload['commands'] ?? [], $durationMs);
+                $level = max(1, min(5, (int) ($payload['level'] ?? 1)));
+                $evaluation = $this->catalog->evaluateCodeRunner($payload['commands'] ?? [], $durationMs, $level);
                 $completed = $evaluation['completed'];
                 $score = $evaluation['score'];
-                $metadata = ['final' => $evaluation['final'], 'commands' => array_slice($payload['commands'] ?? [], 0, 30)];
+                $metadata = ['final' => $evaluation['final'], 'commands' => array_slice($payload['commands'] ?? [], 0, 30), 'level' => $level];
             } else {
                 $events = $lockedSession->events()->where('event_type', 'answer_submitted')->get();
                 $expected = $this->catalog->totalItems($lockedSession->game->slug);

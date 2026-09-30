@@ -10,30 +10,72 @@ const props = defineProps({
     config: { type: Object, required: true },
 });
 const toast = useToast();
+const levels = computed(() => props.config.levels);
+const selectedLevel = ref(1);
+const levelConfig = computed(() => levels.value[selectedLevel.value]);
+
 const commands = ref([]);
-const robot = ref({ ...props.config.start, direction: props.config.direction });
+const robot = ref({
+    ...levelConfig.value.start,
+    direction: levelConfig.value.direction,
+});
 const session = ref(null);
 const executing = ref(false);
 const result = ref(null);
 const startedAt = ref(null);
-const commandOptions = [
-    { value: 'up', label: 'Cima', icon: 'pi pi-arrow-up' },
-    { value: 'down', label: 'Baixo', icon: 'pi pi-arrow-down' },
-    { value: 'left', label: 'Esquerda', icon: 'pi pi-arrow-left' },
-    { value: 'right', label: 'Direita', icon: 'pi pi-arrow-right' },
-];
+
+const directionVectors = {
+    north: { x: 0, y: -1 },
+    south: { x: 0, y: 1 },
+    west: { x: -1, y: 0 },
+    east: { x: 1, y: 0 },
+};
 const movements = {
     up: { x: 0, y: -1, direction: 'north' },
     down: { x: 0, y: 1, direction: 'south' },
     left: { x: -1, y: 0, direction: 'west' },
     right: { x: 1, y: 0, direction: 'east' },
 };
+const baseCommandOptions = [
+    { value: 'up', label: 'Cima', icon: 'pi pi-arrow-up' },
+    { value: 'down', label: 'Baixo', icon: 'pi pi-arrow-down' },
+    { value: 'left', label: 'Esquerda', icon: 'pi pi-arrow-left' },
+    { value: 'right', label: 'Direita', icon: 'pi pi-arrow-right' },
+];
+const commandOptions = computed(() =>
+    levelConfig.value.allow_jump
+        ? [
+              ...baseCommandOptions,
+              { value: 'jump', label: 'Pular Bloco', icon: 'pi pi-forward' },
+          ]
+        : baseCommandOptions,
+);
 const directionIcon = computed(
     () =>
         ({ north: '↑', east: '→', south: '↓', west: '←' })[
             robot.value.direction
         ],
 );
+
+const isObstacleCell = (x, y) =>
+    levelConfig.value.obstacles.some(([ox, oy]) => ox === x && oy === y);
+
+const resetBoard = () => {
+    commands.value = [];
+    robot.value = {
+        ...levelConfig.value.start,
+        direction: levelConfig.value.direction,
+    };
+    session.value = null;
+    startedAt.value = null;
+    result.value = null;
+};
+
+const selectLevel = (level) => {
+    if (executing.value || level === selectedLevel.value) return;
+    selectedLevel.value = level;
+    resetBoard();
+};
 
 const startSession = async () => {
     if (session.value) return;
@@ -46,19 +88,54 @@ const startSession = async () => {
         route('game-sessions.events', [props.game.slug, session.value.id]),
         {
             events: [
-                { type: 'game_opened', level: 1, payload: {} },
-                { type: 'level_started', level: 1, payload: {} },
+                {
+                    type: 'game_opened',
+                    level: selectedLevel.value,
+                    payload: {},
+                },
+                {
+                    type: 'level_started',
+                    level: selectedLevel.value,
+                    payload: {},
+                },
             ],
         },
     );
 };
 
 const addCommand = (command) => {
-    if (!executing.value && commands.value.length < props.config.max_commands)
+    if (
+        !executing.value &&
+        commands.value.length < levelConfig.value.max_commands
+    )
         commands.value.push(command);
 };
 
 const step = (command) => {
+    if (command === 'jump') {
+        const vector = directionVectors[robot.value.direction];
+        const ahead = {
+            x: robot.value.x + vector.x,
+            y: robot.value.y + vector.y,
+        };
+        const next = {
+            x: robot.value.x + vector.x * 2,
+            y: robot.value.y + vector.y * 2,
+        };
+        const aheadIsBlocked = isObstacleCell(ahead.x, ahead.y);
+        const landingBlocked = isObstacleCell(next.x, next.y);
+        const inside =
+            next.x >= 0 &&
+            next.x < levelConfig.value.board_size &&
+            next.y >= 0 &&
+            next.y < levelConfig.value.board_size;
+        if (aheadIsBlocked && inside && !landingBlocked) {
+            robot.value = { ...robot.value, x: next.x, y: next.y };
+            return true;
+        }
+        return false;
+    }
+
     const movement = movements[command];
     if (!movement) return true;
 
@@ -68,14 +145,12 @@ const step = (command) => {
         x: robot.value.x + movement.x,
         y: robot.value.y + movement.y,
     };
-    const blocked = props.config.obstacles.some(
-        ([x, y]) => x === next.x && y === next.y,
-    );
+    const blocked = isObstacleCell(next.x, next.y);
     const inside =
         next.x >= 0 &&
-        next.x < props.config.board_size &&
+        next.x < levelConfig.value.board_size &&
         next.y >= 0 &&
-        next.y < props.config.board_size;
+        next.y < levelConfig.value.board_size;
     if (inside && !blocked) {
         robot.value = next;
         return true;
@@ -87,7 +162,10 @@ const execute = async () => {
     if (!commands.value.length || executing.value) return;
     executing.value = true;
     result.value = null;
-    robot.value = { ...props.config.start, direction: props.config.direction };
+    robot.value = {
+        ...levelConfig.value.start,
+        direction: levelConfig.value.direction,
+    };
     try {
         await startSession();
         let blockedAt = null;
@@ -110,7 +188,13 @@ const execute = async () => {
                 props.game.slug,
                 session.value.id,
             ]),
-            { duration_ms: duration, payload: { commands: commands.value } },
+            {
+                duration_ms: duration,
+                payload: {
+                    level: selectedLevel.value,
+                    commands: commands.value,
+                },
+            },
         );
         result.value = data;
         session.value = null;
@@ -137,11 +221,7 @@ const execute = async () => {
 
 const reset = () => {
     if (executing.value) return;
-    commands.value = [];
-    robot.value = { ...props.config.start, direction: props.config.direction };
-    session.value = null;
-    startedAt.value = null;
-    result.value = null;
+    resetBoard();
 };
 </script>
 
@@ -156,46 +236,70 @@ const reset = () => {
                     </p>
                 </div>
                 <span class="rounded-full bg-white/7 px-3 py-1 text-xs"
-                    >mínimo: {{ config.minimum_commands }} comandos</span
+                    >mínimo: {{ levelConfig.minimum_commands }} comandos</span
                 >
             </div>
+            <div class="mb-4 flex flex-wrap gap-2">
+                <button
+                    v-for="level in Object.keys(levels).map(Number)"
+                    :key="level"
+                    type="button"
+                    class="rounded-full px-3 py-1.5 text-xs font-bold transition-colors"
+                    :class="
+                        level === selectedLevel
+                            ? 'bg-campus-blue text-white'
+                            : 'bg-white/7 text-slate-300 hover:bg-white/15'
+                    "
+                    :disabled="executing"
+                    @click="selectLevel(level)"
+                >
+                    Nível {{ level }}
+                </button>
+            </div>
+            <p class="mb-4 text-xs text-slate-400">
+                {{ levelConfig.title }}
+            </p>
             <div
                 class="bg-campus-deep mx-auto grid aspect-square w-full max-w-xl gap-1 rounded-2xl p-2"
                 :style="{
-                    gridTemplateColumns: `repeat(${config.board_size}, 1fr)`,
+                    gridTemplateColumns: `repeat(${levelConfig.board_size}, 1fr)`,
                 }"
             >
                 <div
-                    v-for="index in config.board_size * config.board_size"
+                    v-for="index in levelConfig.board_size *
+                    levelConfig.board_size"
                     :key="index"
                     class="bg-campus-navy/80 relative flex items-center justify-center rounded-lg border border-cyan-300/8"
                 >
-                    <span
+                    <div
                         v-if="
-                            config.obstacles.some(
-                                ([x, y]) =>
-                                    x === (index - 1) % config.board_size &&
-                                    y ===
-                                        Math.floor(
-                                            (index - 1) / config.board_size,
-                                        ),
+                            isObstacleCell(
+                                (index - 1) % levelConfig.board_size,
+                                Math.floor(
+                                    (index - 1) / levelConfig.board_size,
+                                ),
                             )
                         "
-                        class="h-3/5 w-3/5 rounded-lg bg-slate-600 shadow-inner"
-                    />
+                        class="flex h-3/5 w-3/5 items-center justify-center rounded-lg bg-slate-600 shadow-inner"
+                    >
+                        <i
+                            class="pi pi-times text-xl font-black text-red-500 sm:text-3xl"
+                        />
+                    </div>
                     <i
                         v-if="
-                            config.goal.x === (index - 1) % config.board_size &&
-                            config.goal.y ===
-                                Math.floor((index - 1) / config.board_size)
+                            levelConfig.goal.x ===
+                                (index - 1) % levelConfig.board_size &&
+                            levelConfig.goal.y ===
+                                Math.floor((index - 1) / levelConfig.board_size)
                         "
                         class="pi pi-star-fill text-campus-gold text-2xl sm:text-4xl"
                     />
                     <span
                         v-if="
-                            robot.x === (index - 1) % config.board_size &&
+                            robot.x === (index - 1) % levelConfig.board_size &&
                             robot.y ===
-                                Math.floor((index - 1) / config.board_size)
+                                Math.floor((index - 1) / levelConfig.board_size)
                         "
                         class="bg-campus-blue absolute z-10 flex h-4/5 w-4/5 items-center justify-center rounded-xl text-xl font-black shadow-[0_0_24px_rgba(22,185,255,.55)] transition-all sm:text-3xl"
                         >{{ directionIcon }}</span
@@ -216,7 +320,7 @@ const reset = () => {
                     severity="secondary"
                     outlined
                     :disabled="
-                        executing || commands.length >= config.max_commands
+                        executing || commands.length >= levelConfig.max_commands
                     "
                     @click="addCommand(option.value)"
                 />
@@ -284,6 +388,11 @@ const reset = () => {
                 >
                 algoritmo é uma sequência ordenada de instruções. Cada comando
                 move o robô uma casa na direção indicada.
+                <span v-if="levelConfig.allow_jump">
+                    Neste nível, "Pular Bloco" avança duas casas na direção que
+                    o robô está olhando, passando por cima de um obstáculo à
+                    frente.
+                </span>
             </div>
         </section>
     </div>

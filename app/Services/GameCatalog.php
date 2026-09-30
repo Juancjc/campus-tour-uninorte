@@ -7,15 +7,79 @@ use InvalidArgumentException;
 
 class GameCatalog
 {
+    /** @var array<int, array<string, mixed>> */
+    private const CODE_RUNNER_LEVELS = [
+        1 => [
+            'title' => 'Nível 1 · Primeiros passos',
+            'board_size' => 5,
+            'start' => ['x' => 0, 'y' => 4],
+            'goal' => ['x' => 4, 'y' => 0],
+            'direction' => 'north',
+            'obstacles' => [[1, 2], [2, 2], [3, 1]],
+            'minimum_commands' => 8,
+            'max_commands' => 20,
+            'allow_jump' => false,
+        ],
+        2 => [
+            'title' => 'Nível 2 · Encontre o vão',
+            'board_size' => 5,
+            'start' => ['x' => 0, 'y' => 0],
+            'goal' => ['x' => 4, 'y' => 4],
+            'direction' => 'north',
+            'obstacles' => [[2, 0], [2, 1], [2, 3], [2, 4]],
+            'minimum_commands' => 8,
+            'max_commands' => 20,
+            'allow_jump' => false,
+        ],
+        3 => [
+            'title' => 'Nível 3 · Zigue-zague',
+            'board_size' => 6,
+            'start' => ['x' => 0, 'y' => 0],
+            'goal' => ['x' => 5, 'y' => 5],
+            'direction' => 'north',
+            'obstacles' => [[1, 0], [1, 1], [1, 2], [1, 4], [1, 5], [3, 0], [3, 1], [3, 3], [3, 4], [3, 5]],
+            'minimum_commands' => 12,
+            'max_commands' => 24,
+            'allow_jump' => false,
+        ],
+        4 => [
+            'title' => 'Nível 4 · Labirinto',
+            'board_size' => 7,
+            'start' => ['x' => 0, 'y' => 6],
+            'goal' => ['x' => 6, 'y' => 0],
+            'direction' => 'north',
+            'obstacles' => [
+                [1, 0], [1, 1], [1, 2], [1, 3], [1, 4], [1, 6],
+                [3, 0], [3, 2], [3, 3], [3, 4], [3, 5], [3, 6],
+                [5, 0], [5, 1], [5, 2], [5, 3], [5, 5], [5, 6],
+            ],
+            'minimum_commands' => 18,
+            'max_commands' => 30,
+            'allow_jump' => false,
+        ],
+        5 => [
+            'title' => 'Nível 5 · Pular o bloco',
+            'board_size' => 6,
+            'start' => ['x' => 0, 'y' => 5],
+            'goal' => ['x' => 5, 'y' => 0],
+            'direction' => 'north',
+            'obstacles' => [[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2]],
+            'minimum_commands' => 9,
+            'max_commands' => 20,
+            'allow_jump' => true,
+        ],
+    ];
+
     /** @return array<string, mixed> */
     public function publicConfig(Game|string $game): array
     {
         $slug = $game instanceof Game ? $game->slug : $game;
-        $config = $this->config($slug);
 
         if ($slug === 'code-runner') {
-            return $config;
+            return ['levels' => self::CODE_RUNNER_LEVELS];
         }
+
+        $config = $this->config($slug);
 
         return [
             'items' => collect($config['items'])
@@ -46,33 +110,53 @@ class GameCatalog
         ];
     }
 
-    /** @return array{completed: bool, score: int, final: array{x: int, y: int, direction: string}, minimum_commands: int} */
-    public function evaluateCodeRunner(array $commands, int $durationMs): array
+    /** @return array{completed: bool, score: int, final: array{x: int, y: int, direction: string}, minimum_commands: int, level: int} */
+    public function evaluateCodeRunner(array $commands, int $durationMs, int $level = 1): array
     {
-        $config = $this->config('code-runner');
+        $config = self::CODE_RUNNER_LEVELS[$level] ?? self::CODE_RUNNER_LEVELS[1];
         $position = $config['start'];
         $direction = $config['direction'];
         $obstacles = collect($config['obstacles'])->map(fn (array $point): string => implode(':', $point))->all();
-        $movements = [
-            'up' => ['x' => 0, 'y' => -1, 'direction' => 'north'],
-            'down' => ['x' => 0, 'y' => 1, 'direction' => 'south'],
-            'left' => ['x' => -1, 'y' => 0, 'direction' => 'west'],
-            'right' => ['x' => 1, 'y' => 0, 'direction' => 'east'],
+        $vectors = [
+            'north' => ['x' => 0, 'y' => -1],
+            'south' => ['x' => 0, 'y' => 1],
+            'west' => ['x' => -1, 'y' => 0],
+            'east' => ['x' => 1, 'y' => 0],
         ];
+        $turns = [
+            'up' => 'north',
+            'down' => 'south',
+            'left' => 'west',
+            'right' => 'east',
+        ];
+        $allowedCommands = $config['allow_jump'] ? [...array_keys($turns), 'jump'] : array_keys($turns);
         $validCommands = [];
 
         foreach (array_slice($commands, 0, 30) as $command) {
-            if (is_string($command) && isset($movements[$command])) {
+            if (is_string($command) && in_array($command, $allowedCommands, true)) {
                 $validCommands[] = $command;
             }
         }
 
         foreach ($validCommands as $command) {
-            $movement = $movements[$command];
-            $direction = $movement['direction'];
+            if ($command === 'jump') {
+                $vector = $vectors[$direction];
+                $ahead = ['x' => $position['x'] + $vector['x'], 'y' => $position['y'] + $vector['y']];
+                $next = ['x' => $position['x'] + $vector['x'] * 2, 'y' => $position['y'] + $vector['y'] * 2];
+                $aheadIsBlocked = in_array($ahead['x'].':'.$ahead['y'], $obstacles, true);
+                $insideBoard = $next['x'] >= 0 && $next['x'] < $config['board_size'] && $next['y'] >= 0 && $next['y'] < $config['board_size'];
+                if ($aheadIsBlocked && $insideBoard && ! in_array($next['x'].':'.$next['y'], $obstacles, true)) {
+                    $position = $next;
+                }
+
+                continue;
+            }
+
+            $direction = $turns[$command];
+            $vector = $vectors[$direction];
             $next = [
-                'x' => $position['x'] + $movement['x'],
-                'y' => $position['y'] + $movement['y'],
+                'x' => $position['x'] + $vector['x'],
+                'y' => $position['y'] + $vector['y'],
             ];
 
             $insideBoard = $next['x'] >= 0 && $next['x'] < $config['board_size'] && $next['y'] >= 0 && $next['y'] < $config['board_size'];
@@ -91,6 +175,7 @@ class GameCatalog
             'score' => $score,
             'final' => [...$position, 'direction' => $direction],
             'minimum_commands' => $config['minimum_commands'],
+            'level' => $level,
         ];
     }
 
@@ -103,15 +188,6 @@ class GameCatalog
     private function config(string $slug): array
     {
         return match ($slug) {
-            'code-runner' => [
-                'board_size' => 5,
-                'start' => ['x' => 0, 'y' => 4],
-                'goal' => ['x' => 4, 'y' => 0],
-                'direction' => 'north',
-                'obstacles' => [[1, 2], [2, 2], [3, 1]],
-                'minimum_commands' => 8,
-                'max_commands' => 20,
-            ],
             'guardiao-digital' => ['items' => [
                 ['id' => 'phishing', 'prompt' => 'Um e-mail urgente pede sua senha para evitar o bloqueio da conta. O que fazer?', 'choices' => [['label' => 'Clicar e informar a senha', 'value' => 'click'], ['label' => 'Abrir o site oficial digitando o endereço', 'value' => 'official'], ['label' => 'Responder pedindo confirmação', 'value' => 'reply']], 'answer' => 'official', 'points' => 200, 'explanation' => 'Mensagens urgentes podem ser phishing. Acesse sempre o serviço pelo endereço oficial e nunca envie sua senha.'],
                 ['id' => 'password', 'prompt' => 'Qual senha é mais segura?', 'choices' => [['label' => '12345678', 'value' => 'simple'], ['label' => 'meunome2026', 'value' => 'personal'], ['label' => 'Cacto!Voa_92_Lua', 'value' => 'strong']], 'answer' => 'strong', 'points' => 200, 'explanation' => 'Senhas longas, únicas e difíceis de adivinhar são mais resistentes. Um gerenciador de senhas ajuda muito.'],
