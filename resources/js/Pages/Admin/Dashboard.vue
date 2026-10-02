@@ -1,10 +1,13 @@
 <script setup>
+import DangerButton from '@/Components/DangerButton.vue';
 import MetricBar from '@/Components/MetricBar.vue';
+import Modal from '@/Components/Modal.vue';
+import SecondaryButton from '@/Components/SecondaryButton.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import Button from 'primevue/button';
 import InputText from 'primevue/inputtext';
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 
 const props = defineProps({
     metrics: { type: Object, required: true },
@@ -24,6 +27,14 @@ const filter = () =>
         preserveState: true,
         replace: true,
     });
+const confirmingRankingReset = ref(false);
+const resetForm = useForm({});
+const resetRanking = () => {
+    resetForm.delete(route('admin.rankings.destroy'), {
+        preserveScroll: true,
+        onSuccess: () => (confirmingRankingReset.value = false),
+    });
+};
 const cards = [
     ['users', 'Usuários', 'pi pi-users'],
     ['visitors', 'Visitantes', 'pi pi-eye'],
@@ -44,9 +55,18 @@ const cards = [
                 </p>
                 <h1 class="mt-2 text-4xl font-black">Visão geral do evento</h1>
             </div>
-            <Link :href="route('admin.reports.index')"
-                ><Button label="RELATÓRIOS" icon="pi pi-file-export"
-            /></Link>
+            <div class="flex flex-wrap gap-3">
+                <Link :href="route('admin.reports.index')"
+                    ><Button label="RELATÓRIOS" icon="pi pi-file-export"
+                /></Link>
+                <Button
+                    type="button"
+                    label="ZERAR RANKING"
+                    icon="pi pi-trash"
+                    severity="danger"
+                    @click="confirmingRankingReset = true"
+                />
+            </div>
         </div>
         <form
             class="glass-card mt-7 flex flex-wrap items-end gap-3 rounded-2xl p-4"
@@ -94,5 +114,58 @@ const cards = [
                 </div>
             </div>
         </section>
+
+        <Modal
+            :show="confirmingRankingReset"
+            max-width="md"
+            :closeable="!resetForm.processing"
+            @close="confirmingRankingReset = false"
+        >
+            <div class="bg-campus-navy p-6 text-slate-100">
+                <div class="flex items-start gap-4">
+                    <span
+                        class="flex size-12 shrink-0 items-center justify-center rounded-full bg-red-500/15 text-red-300"
+                    >
+                        <i class="pi pi-exclamation-triangle text-xl" />
+                    </span>
+                    <div>
+                        <h2 class="text-xl font-black">
+                            Zerar todo o ranking?
+                        </h2>
+                        <p class="mt-2 text-sm leading-6 text-slate-300">
+                            Todos os placares e pontos serão apagados, e as
+                            partidas em andamento serão encerradas. Os usuários
+                            e o histórico das partidas concluídas serão
+                            mantidos.
+                        </p>
+                        <p class="mt-3 text-sm font-bold text-red-300">
+                            Esta ação não pode ser desfeita.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-7 flex flex-wrap justify-end gap-3">
+                    <SecondaryButton
+                        type="button"
+                        :disabled="resetForm.processing"
+                        @click="confirmingRankingReset = false"
+                    >
+                        Cancelar
+                    </SecondaryButton>
+                    <DangerButton
+                        type="button"
+                        :disabled="resetForm.processing"
+                        :class="{ 'opacity-50': resetForm.processing }"
+                        @click="resetRanking"
+                    >
+                        {{
+                            resetForm.processing
+                                ? 'ZERANDO...'
+                                : 'SIM, ZERAR RANKING'
+                        }}
+                    </DangerButton>
+                </div>
+            </div>
+        </Modal>
     </AuthenticatedLayout>
 </template>

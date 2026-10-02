@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\ExportController;
+use App\Http\Controllers\Admin\RankingController as AdminRankingController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\GameController;
@@ -34,6 +35,7 @@ Route::middleware('auth')->group(function () {
 
 Route::prefix('admin')->name('admin.')->middleware(['auth', 'admin'])->group(function () {
     Route::get('/', AdminDashboardController::class)->name('dashboard');
+    Route::delete('/rankings', [AdminRankingController::class, 'destroy'])->name('rankings.destroy');
     Route::get('/reports', [ReportController::class, 'index'])->name('reports.index');
     Route::get('/reports/{type}.csv', [ExportController::class, 'csv'])->name('reports.csv');
     Route::get('/reports/{type}.xlsx', [ExportController::class, 'xlsx'])->name('reports.xlsx');

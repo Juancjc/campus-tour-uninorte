@@ -212,6 +212,33 @@ class GameSessionControllerTest extends TestCase
         $this->assertDatabaseHas('game_scores', ['user_id' => $user->id, 'game_id' => $game->id, 'best_score' => 0, 'completed_count' => 0]);
     }
 
+    public function test_returns_403_when_completing_a_cancelled_session(): void
+    {
+        $user = User::factory()->create();
+        $game = Game::factory()->create(['slug' => 'code-runner']);
+        $session = GameSession::factory()->for($user)->for($game)->create([
+            'status' => 'cancelled',
+            'result' => 'ranking_reset',
+            'completed_at' => now(),
+        ]);
+
+        $response = $this->actingAs($user)->postJson(route('game-sessions.complete', [$game, $session]), [
+            'duration_ms' => 5000,
+            'payload' => ['commands' => ['up', 'up', 'up', 'up', 'right', 'right', 'right', 'right']],
+        ]);
+
+        $response->assertForbidden();
+        $this->assertDatabaseHas('game_sessions', [
+            'id' => $session->id,
+            'status' => 'cancelled',
+            'score' => 0,
+        ]);
+        $this->assertDatabaseMissing('game_scores', [
+            'user_id' => $user->id,
+            'game_id' => $game->id,
+        ]);
+    }
+
     public function test_failed_code_runner_attempt_allows_a_new_session(): void
     {
         $user = User::factory()->create();

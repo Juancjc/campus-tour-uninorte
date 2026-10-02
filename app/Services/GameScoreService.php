@@ -97,6 +97,9 @@ class GameScoreService
             if ($lockedSession->status === 'completed') {
                 return $this->resultPayload($user->fresh(), $lockedSession, []);
             }
+            if ($lockedSession->status !== 'started') {
+                throw ValidationException::withMessages(['session' => 'Esta partida já foi encerrada.']);
+            }
 
             $durationMs = min(max($durationMs, 1000), 3600000);
             if ($lockedSession->game->slug === 'code-runner') {
