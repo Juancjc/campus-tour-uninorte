@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Http\Controllers\Admin;
 
+use App\Models\Game;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
 use Tests\TestCase;
@@ -48,5 +49,19 @@ class ExportControllerTest extends TestCase
             ->get(route('admin.reports.csv', ['type' => 'schools']));
 
         $response->assertForbidden();
+    }
+
+    public function test_game_export_excludes_inactive_games(): void
+    {
+        $admin = User::factory()->admin()->create();
+        Game::factory()->create(['name' => 'Code Runner', 'active' => true]);
+        Game::factory()->create(['name' => 'Rede em Ação', 'active' => false]);
+
+        $response = $this->actingAs($admin)->get(route('admin.reports.csv', ['type' => 'games']));
+
+        $response->assertOk()->assertDownload('campus-tour-games.csv');
+        $content = $response->streamedContent();
+        $this->assertStringContainsString('Code Runner', $content);
+        $this->assertStringNotContainsString('Rede em Ação', $content);
     }
 }

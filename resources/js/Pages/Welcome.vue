@@ -94,8 +94,7 @@ onMounted(async () => {
                         class="mt-6 max-w-2xl text-lg leading-relaxed text-slate-300 sm:text-xl"
                     >
                         Descubra cursos, profissões e possibilidades de carreira
-                        enquanto programa um robô, protege sua vida digital e
-                        coloca uma rede em ação.
+                        enquanto programa um robô e protege sua vida digital.
                     </p>
                     <div class="mt-8 flex flex-col gap-3 sm:flex-row">
                         <Link :href="route('register')"
@@ -119,7 +118,7 @@ onMounted(async () => {
                         class="mt-10 flex flex-wrap gap-6 text-sm text-slate-400"
                     >
                         <span
-                            ><strong class="text-2xl text-white">3</strong>
+                            ><strong class="text-2xl text-white">2</strong>
                             jogos rápidos</span
                         ><span
                             ><strong class="text-2xl text-white">{{
@@ -158,7 +157,7 @@ onMounted(async () => {
                         experiência anterior.
                     </p>
                 </div>
-                <div class="mt-12 grid gap-5 md:grid-cols-3">
+                <div class="mx-auto mt-12 grid max-w-4xl gap-5 md:grid-cols-2">
                     <article
                         v-for="(game, index) in games"
                         :key="game.slug"

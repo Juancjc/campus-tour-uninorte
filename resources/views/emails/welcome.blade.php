@@ -9,7 +9,7 @@
                 <tr><td style="padding:12px 32px 36px;text-align:center">
                     <p style="margin:0;color:#16b9ff;font-size:12px;font-weight:bold;letter-spacing:2px">VOCÊ ESTÁ DENTRO</p>
                     <h1 style="margin:12px 0 0;font-size:32px;line-height:1.15;color:#ffffff">Bem-vindo ao Campus Tour UniNorte 2026!</h1>
-                    <p style="margin:18px 0;color:#c9def2;font-size:17px;line-height:1.6">Olá, {{ $user->name }}! Seu primeiro desafio já está esperando. Explore programação, segurança digital e redes — e suba no ranking.</p>
+                    <p style="margin:18px 0;color:#c9def2;font-size:17px;line-height:1.6">Olá, {{ $user->name }}! Seu primeiro desafio já está esperando. Explore programação e segurança digital — e suba no ranking.</p>
                     <a href="{{ rtrim($appUrl, '/') }}/dashboard" style="display:inline-block;margin-top:10px;padding:15px 26px;border-radius:12px;background:#087ff5;color:#ffffff;text-decoration:none;font-weight:bold">ACESSAR CAMPUS TOUR</a>
                     <p style="margin:28px 0 0;color:#819bb5;font-size:12px">Campus Tour UniNorte 2026 • SI & ADS</p>
                 </td></tr>

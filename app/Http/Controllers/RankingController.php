@@ -41,6 +41,8 @@ class RankingController extends Controller
 
         $overall = DB::table('game_scores')
             ->join('users', 'users.id', '=', 'game_scores.user_id')
+            ->join('games', 'games.id', '=', 'game_scores.game_id')
+            ->where('games.active', true)
             ->where('game_scores.completed_count', '>', 0)
             ->select('users.id as user_id', 'users.name', 'users.school_name')
             ->selectRaw('SUM(game_scores.best_score) as total_score')

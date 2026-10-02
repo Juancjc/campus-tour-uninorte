@@ -69,6 +69,7 @@ class GameSessionController extends Controller
 
     private function authorizeSession(Game $game, GameSession $gameSession): void
     {
+        abort_unless($game->active, 404);
         abort_unless($gameSession->game_id === $game->id, 404);
         Gate::authorize('update', $gameSession);
     }

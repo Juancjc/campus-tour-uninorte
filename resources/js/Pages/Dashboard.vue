@@ -26,7 +26,7 @@ const page = usePage();
             >
             <h1 class="mt-2 text-4xl font-black">Campus Tour concluído! 🎉</h1>
             <p class="mt-3 max-w-2xl text-slate-200">
-                Você explorou programação, segurança e redes. Veja seu score,
+                Você explorou programação e segurança digital. Veja seu score,
                 suas conquistas e continue subindo no ranking.
             </p>
             <div class="mt-6 flex flex-wrap gap-3">

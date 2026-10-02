@@ -29,6 +29,32 @@ class GameSessionControllerTest extends TestCase
         $this->assertDatabaseHas('game_events', ['user_id' => $user->id, 'game_id' => $game->id, 'event_type' => 'game_started']);
     }
 
+    public function test_returns_404_when_starting_an_inactive_game(): void
+    {
+        $user = User::factory()->create();
+        $game = Game::factory()->create(['slug' => 'rede-em-acao', 'active' => false]);
+
+        $response = $this->actingAs($user)->postJson(route('game-sessions.store', $game));
+
+        $response->assertNotFound();
+        $this->assertDatabaseMissing('game_sessions', ['user_id' => $user->id, 'game_id' => $game->id]);
+    }
+
+    public function test_returns_404_when_completing_an_inactive_game_session(): void
+    {
+        $user = User::factory()->create();
+        $game = Game::factory()->create(['slug' => 'rede-em-acao', 'active' => false]);
+        $session = GameSession::factory()->for($user)->for($game)->create();
+
+        $response = $this->actingAs($user)->postJson(route('game-sessions.complete', [$game, $session]), [
+            'duration_ms' => 5000,
+            'payload' => [],
+        ]);
+
+        $response->assertNotFound();
+        $this->assertDatabaseHas('game_sessions', ['id' => $session->id, 'status' => 'started', 'score' => 0]);
+    }
+
     public function test_server_calculates_code_runner_score_and_ignores_client_score(): void
     {
         $user = User::factory()->create();
@@ -212,12 +238,12 @@ class GameSessionControllerTest extends TestCase
         $this->assertDatabaseHas('users', ['id' => $user->id, 'points' => 0]);
     }
 
-    public function test_completing_third_game_saves_total_points_and_tour_completion(): void
+    public function test_completing_all_active_games_ignores_inactive_game_points_and_completes_tour(): void
     {
         $user = User::factory()->create();
         $codeRunner = Game::factory()->create(['slug' => 'code-runner']);
         $guardian = Game::factory()->create(['slug' => 'guardiao-digital']);
-        $network = Game::factory()->create(['slug' => 'rede-em-acao']);
+        $network = Game::factory()->create(['slug' => 'rede-em-acao', 'active' => false]);
         GameScore::factory()->for($user)->for($guardian)->create(['best_score' => 700, 'completed_count' => 1]);
         GameScore::factory()->for($user)->for($network)->create(['best_score' => 800, 'completed_count' => 1]);
         $session = GameSession::factory()->for($user)->for($codeRunner)->create();
@@ -234,7 +260,7 @@ class GameSessionControllerTest extends TestCase
             ->assertJsonPath('score', 990)
             ->assertJsonPath('campus_tour_completed', true)
             ->assertJsonPath('achievements.0.slug', 'explorador-da-tecnologia');
-        $this->assertDatabaseHas('users', ['id' => $user->id, 'points' => 2490]);
+        $this->assertDatabaseHas('users', ['id' => $user->id, 'points' => 1690]);
         $this->assertNotNull($user->fresh()->campus_tour_completed_at);
         $this->assertDatabaseHas('achievement_user', ['user_id' => $user->id, 'achievement_id' => $achievement->id]);
     }

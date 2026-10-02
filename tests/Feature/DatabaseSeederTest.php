@@ -17,6 +17,8 @@ class DatabaseSeederTest extends TestCase
         $this->seed();
 
         $this->assertSame(3, Game::query()->count());
+        $this->assertSame(2, Game::query()->where('active', true)->count());
+        $this->assertFalse(Game::query()->where('slug', 'rede-em-acao')->value('active'));
         $this->assertGreaterThan(10, Profession::query()->count());
         $this->assertGreaterThanOrEqual(6, Achievement::query()->count());
     }

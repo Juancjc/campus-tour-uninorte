@@ -1,7 +1,6 @@
 <script setup>
 import CodeRunner from '@/Games/CodeRunner/CodeRunner.vue';
 import DigitalGuardian from '@/Games/DigitalGuardian/DigitalGuardian.vue';
-import NetworkChallenge from '@/Games/NetworkChallenge/NetworkChallenge.vue';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { computed } from 'vue';
@@ -14,7 +13,6 @@ const props = defineProps({
 const components = {
     'code-runner': CodeRunner,
     'guardiao-digital': DigitalGuardian,
-    'rede-em-acao': NetworkChallenge,
 };
 const gameComponent = computed(() => components[props.game.slug]);
 </script>

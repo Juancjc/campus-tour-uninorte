@@ -75,6 +75,7 @@ class ReportService
             ->map(fn ($row): array => ['name' => $row->name, 'category' => $row->category, 'students' => (int) $row->students]);
 
         $games = Game::query()
+            ->where('active', true)
             ->withCount([
                 'sessions as sessions_count' => fn (Builder $query) => $this->applyPeriod($query, $filters),
                 'sessions as completions_count' => fn (Builder $query) => $this->applyPeriod($query, $filters)->where('status', 'completed'),

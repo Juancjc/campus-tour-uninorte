@@ -9,6 +9,7 @@ use App\Models\GameScore;
 use App\Models\GameSession;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
@@ -150,10 +151,10 @@ class GameScoreService
                 $gameScore->save();
 
                 $newAchievements = $this->awardAchievements($user, $lockedSession->game, $score);
-                $user->update(['points' => (int) $user->gameScores()->sum('best_score')]);
+                $user->update(['points' => (int) $this->activeGameScores($user)->sum('best_score')]);
             }
 
-            $campusTourCompleted = $user->gameScores()->where('completed_count', '>', 0)->count() >= 3;
+            $campusTourCompleted = $this->hasCompletedCampusTour($user);
             if ($campusTourCompleted && $user->campus_tour_completed_at === null) {
                 $user->update(['campus_tour_completed_at' => now()]);
             }
@@ -182,7 +183,7 @@ class GameScoreService
         if ($game->slug === 'guardiao-digital') {
             $slugs[] = 'guardiao-digital';
         }
-        if ($user->gameScores()->where('completed_count', '>', 0)->count() >= 3) {
+        if ($this->hasCompletedCampusTour($user)) {
             $slugs[] = 'explorador-da-tecnologia';
         }
 
@@ -195,6 +196,19 @@ class GameScoreService
         }
 
         return $new->map->only(['slug', 'name', 'description', 'icon', 'points'])->values()->all();
+    }
+
+    private function activeGameScores(User $user): HasMany
+    {
+        return $user->gameScores()->whereHas('game', fn ($query) => $query->where('active', true));
+    }
+
+    private function hasCompletedCampusTour(User $user): bool
+    {
+        $activeGameCount = Game::query()->where('active', true)->count();
+
+        return $activeGameCount > 0
+            && $this->activeGameScores($user)->where('completed_count', '>', 0)->count() >= $activeGameCount;
     }
 
     /** @param array<int, array<string, mixed>> $achievements
